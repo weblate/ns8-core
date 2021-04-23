@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenLDAP directory server
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=%h/openldap.env
+Restart=on-failure
+ExecStartPre=/bin/rm -f %t/openldap.pid %t/openldap.ctr-id
+ExecStart=/usr/bin/podman run --env-file openldap.env --conmon-pidfile %t/openldap.pid --cidfile %t/openldap.ctr-id --cgroups=no-conmon -p 127.0.0.1:$PORT:1389 --name openldap -d -v ~/ldifs:/ldifs -v openldap-data:/bitnami/openldap/data docker.io/bitnami/openldap:2
+ExecStop=/usr/bin/podman stop --ignore --cidfile %t/openldap.ctr-id -t 10
+ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/openldap.ctr-id
+PIDFile=%t/openldap.pid
+KillMode=none
+Type=forking
+WorkingDirectory=%S/state
+
+[Install]
+WantedBy=default.target
