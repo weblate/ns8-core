@@ -22,18 +22,5 @@
 
 set -e
 
-mkdir ~/ldifs
-
-# TODO
-# settare pass random, rendere personalizzabili le opzioni
-
-car > openvpn.env <<EOF
-PORT=11389
-LDAP_ROOT=dc=directory,dc=nh
-LDAP_ADMIN_USERNAME=admin
-LDAP_ADMIN_PASSWORD=pass
-LDAP_USERS=
-LDAP_PASSWORDS=
-LDAP_GROUP=locals
-LDAP_SKIP_DEFAULT_TREE=yes
-EOF
+# Enable and start the service
+systemctl --user enable --now openldap.service

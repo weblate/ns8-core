@@ -1,0 +1,36 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "provision-domain input",
+    "$id": "http://schema.nethserver.org/openldap/provision-domain-input.json",
+    "description": "Provision a new OpenLDAP instance",
+    "examples": [
+        {
+            "adminuser": "administrator",
+            "adminpass": "Nethesis,1234",
+            "domain": "example.com"
+        }
+    ],
+    "type": "object",
+    "required": [
+        "adminuser",
+        "adminpass",
+        "domain"
+    ],
+    "properties": {
+        "adminuser": {
+            "type": "string",
+            "minLength": 1
+        },
+        "adminpass": {
+            "type": "string",
+            "minLength": 1
+        },
+        "domain": {
+            "type": "string",
+            "title": "Domain name",
+            "pattern": "^[a-zA-Z][-a-zA-Z0-9]{0,62}(\\.[a-zA-Z][-a-zA-Z0-9]{0,62})+$",
+            "maxLength": 140,
+            "minLength": 1
+        }
+    }
+}

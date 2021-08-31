@@ -1,19 +1,30 @@
 #!/bin/bash
 
 set -e
-messages=("Publish the image with:" "")
+images=()
 repobase="ghcr.io/nethserver"
 
 reponame="openldap"
 container=$(buildah from scratch)
 
-buildah add "${container}" imageroot /
-buildah config --entrypoint=/ "${container}"
+buildah add "${container}" imageroot /imageroot
+buildah add "${container}" ui /ui
+buildah config \
+    --label='org.nethserver.images=docker.io/bitnami/openldap:2.4' \
+    --label='org.nethserver.authorizations=ldapproxy@node:accountprovider cluster:accountprovider' \
+    --entrypoint=/ "${container}"
 buildah commit "${container}" "${repobase}/${reponame}"
-messages+=(" buildah push ${repobase}/${reponame} docker://${repobase}/${reponame}:latest")
+images+=("${repobase}/${reponame}")
 
 #
 #
 #
 
-printf "%s\n" "${messages[@]}"
+if [[ -n "${CI}" ]]; then
+    # Set output value for Github Actions
+    printf "::set-output name=images::%s\n" "${images[*]}"
+else
+    printf "Publish the images with:\n\n"
+    for image in "${images[@]}"; do printf "  buildah push %s docker://%s:latest\n" "${image}" "${image}" ; done
+    printf "\n"
+fi
