@@ -58,10 +58,7 @@ agent.set_env('LDAP_ADMIN_PASSWORD', request['adminpass'])
 alphabet = string.ascii_letters + string.digits + '+-*/.-_$%&?!^'
 svcpass = ''.join([secrets.choice(alphabet) for i in range(32)])
 
-agent.set_env('LDAP_ROOT', 'DC=' + domain.replace('.', ',DC='))
-agent.set_env('LDAP_USERS', 'ldapservice')
+agent.set_env('LDAP_ROOT', 'dc=' + domain.replace('.', ',dc='))
 agent.set_env('LDAP_PASSWORDS', svcpass)
-agent.set_env('LDAP_GROUP', 'locals')
-agent.set_env('LDAP_USER_DC', 'People')
 
 agent.dump_env()

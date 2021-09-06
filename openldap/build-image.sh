@@ -11,6 +11,7 @@ buildah add "${container}" imageroot /imageroot
 buildah add "${container}" ui /ui
 buildah config \
     --label='org.nethserver.images=docker.io/bitnami/openldap:2.4' \
+    --label="org.nethserver.tcp-ports-demand=1" \
     --label='org.nethserver.authorizations=ldapproxy@node:accountprovider cluster:accountprovider' \
     --entrypoint=/ "${container}"
 buildah commit "${container}" "${repobase}/${reponame}"

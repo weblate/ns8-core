@@ -21,6 +21,12 @@
 #
 
 set -e
+echo '{}' # Satisfy validate-output.json schema
+
+exec 1>&2
+
+# Ensure the mount point dir exists
+mkdir -p ~/ldifs
 
 # Enable and start the service
 systemctl --user enable --now openldap.service
