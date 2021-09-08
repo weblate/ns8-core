@@ -8,8 +8,6 @@ Add a node to a domain:
 
     api-cli run provision-domain --agent module/openldap1 --data - <<EOF
     {
-        "adminuser":"admin",
-        "adminpass":"Nethesis,1234",
         "domain":"$(hostname -d)"
     }
     EOF
@@ -18,31 +16,26 @@ Further OpenLDAP instances for the same `domain` are **joined** together
 in a multi-master cluster. The command is almost the same: just change the
 `--agent` argument, e.g. `--agent module/openldap2` and so on.
 
-Admin credentials can be set differently for each instance.
-
 ## Setup
 
-Enable server modules:
-
-```
-ldapadd -H ldapi:/// <<EOF
-dn: cn=module,cn=config
-cn: module 
-objectClass: olcModuleList
-olcModulePath: /opt/bitnami/openldap/lib/openldap/
-olcModuleLoad: syncprov.so
-EOF
-
-dn: olcOverlay=syncprov,olcDatabase={2}mdb,cn=config
-objectClass: olcOverlayConfig
-objectClass: olcSyncProvConfig
-olcOverlay: syncprov
-```
-
-Configure syncronization
+Enable server modules and configure syncronization:
 
 ```
 ldapmodify -H ldapi:/// <<EOF
+
+dn: cn=module,cn=config
+changetype: add
+cn: module
+objectClass: olcModuleList
+olcModulePath: /opt/bitnami/openldap/lib/openldap/
+olcModuleLoad: syncprov.so
+
+dn: olcOverlay=syncprov,olcDatabase={2}mdb,cn=config
+changetype: add
+objectClass: olcOverlayConfig
+objectClass: olcSyncProvConfig
+olcOverlay: syncprov
+
 dn: cn=config
 changetype: modify
 replace: olcServerID
@@ -76,5 +69,29 @@ objectClass: dcObject
 objectClass: organization
 dc: dp
 o: dp.nethserver.net
+
+dn: ou=users,dc=dp,dc=nethserver,dc=net
+objectClass: top
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=groups,dc=dp,dc=nethserver,dc=net
+objectClass: top
+objectClass: organizationalUnit
+ou: groups
+
+dn: cn=users,ou=groups,dc=dp,dc=nethserver,dc=net
+objectClass: posixGroup
+cn: users
+gidNumber: 1000
+
+dn: uid=admin,ou=users,dc=dp,dc=nethserver,dc=net
+objectClass: posixAccount
+gecos: Administrator
+uid: admin
+uidNumber: 1000
+gidNumber: 1000
+userPassword:: e0NSWVBUfSQ2JHJpSTQzenJ4VE1KWEcyNEIkc2t0WGNsa3JOUnN5ZG5OclFJa
+
 EOF
 ```

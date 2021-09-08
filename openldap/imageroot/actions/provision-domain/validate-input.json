@@ -5,26 +5,14 @@
     "description": "Provision a new OpenLDAP instance",
     "examples": [
         {
-            "adminuser": "administrator",
-            "adminpass": "Nethesis,1234",
             "domain": "example.com"
         }
     ],
     "type": "object",
     "required": [
-        "adminuser",
-        "adminpass",
         "domain"
     ],
     "properties": {
-        "adminuser": {
-            "type": "string",
-            "minLength": 1
-        },
-        "adminpass": {
-            "type": "string",
-            "minLength": 1
-        },
         "domain": {
             "type": "string",
             "title": "Domain name",

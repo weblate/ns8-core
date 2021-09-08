@@ -1,0 +1,16 @@
+dn: ${LDAP_ROOT}
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+dc: ${FIRST_DOMAIN_COMPONENT}
+o: ${DOMAIN}
+
+dn: ou=users,${LDAP_ROOT}
+objectClass: top
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=groups,${LDAP_ROOT}
+objectClass: top
+objectClass: organizationalUnit
+ou: groups

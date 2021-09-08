@@ -30,6 +30,8 @@ import string
 request = json.load(sys.stdin)
 domain = request['domain'].lower()
 node_id = os.environ['NODE_ID']
+server_id = int(os.environ['MODULE_ID'].removeprefix("openldap"))
+alphabet = string.ascii_letters + string.digits
 
 rdb = agent.redis_connect()
 
@@ -41,9 +43,12 @@ for kopenldap in rdb.scan_iter(f'module/openldap*/environment'):
     penv = rdb.hgetall(kopenldap)
     if penv.get('DOMAIN', '') == domain:
         provision_type = 'join-domain'
+        admin_password = penv['LDAP_ADMIN_PASSWORD']
         break
 else: # No existing LDAP server for the given domain. Create a new one
     provision_type = 'new-domain'
+    # Generate a random password for ldapservice
+    admin_password = ''.join([secrets.choice(alphabet) for i in range(32)])
 
 agent.set_env('PROVISION_TYPE', provision_type)
 
@@ -51,14 +56,10 @@ agent.set_env('PROVISION_TYPE', provision_type)
 agent.set_env('DOMAIN', domain)
 
 # JSON Schema mandatory fields. We are sure they are present.
-agent.set_env('LDAP_ADMIN_USERNAME', request['adminuser'])
-agent.set_env('LDAP_ADMIN_PASSWORD', request['adminpass'])
-
-# Generate a random password for ldapservice
-alphabet = string.ascii_letters + string.digits + '+-*/.-_$%&?!^'
-svcpass = ''.join([secrets.choice(alphabet) for i in range(32)])
+agent.set_env('LDAP_ADMIN_USERNAME', 'admin')
+agent.set_env('LDAP_ADMIN_PASSWORD', admin_password)
 
 agent.set_env('LDAP_ROOT', 'dc=' + domain.replace('.', ',dc='))
-agent.set_env('LDAP_PASSWORDS', svcpass)
+agent.set_env('SERVER_ID', str(server_id)) # value of olcServerID
 
 agent.dump_env()

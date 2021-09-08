@@ -5,14 +5,9 @@ Description=OpenLDAP directory server
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Environment=LDAP_ADMIN_USERNAME=admin
 Environment=LDAP_ADMIN_PASSWORD=adminpassword
-Environment=LDAP_ROOT=DC=directory,DC=nh
-Environment=LDAP_USERS=ldapservice
-Environment=LDAP_PASSWORDS=ldappassword
-Environment=LDAP_GROUP=locals
-Environment=LDAP_USER_DC=People
 Environment=LDAP_ALLOW_ANON_BINDING=yes
 Environment=LDAP_PORT_NUMBER=10389
-Environment=LDAP_SKIP_DEFAULT_TREE=yes
+Environment=LDAP_EXTRA_SCHEMAS=cosine,inetorgperson,nis
 EnvironmentFile=%S/state/environment
 Restart=always
 TimeoutStopSec=70
