@@ -25,6 +25,7 @@ ExecStart=/usr/bin/podman run \
     --publish=127.0.0.1:${TCP_PORT}:10389 \
     --publish=${IP_ADDRESS}:${TCP_PORT}:10389 \
     ${OPENLDAP_IMAGE}
+ExecStartPost=/usr/bin/bash -c "while ! exec 3<>/dev/tcp/127.0.0.1/${TCP_PORT}; do sleep 1 ; done"
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/openldap.ctr-id -t 10
 ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/openldap.ctr-id
 PIDFile=%t/openldap.pid

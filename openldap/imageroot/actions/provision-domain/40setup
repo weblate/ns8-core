@@ -20,12 +20,30 @@
 # along with NethServer.  If not, see COPYING.
 #
 
-exec 1>&2
 set -e
+exec 1>&2
 
-export FIRST_DOMAIN_COMPONENT=${DOMAIN/.*/}
+podman exec -i openldap ldapmodify -H ldapi:/// <<EOF
+dn: cn=config
+changeType: modify
+replace: olcServerID
+olcServerID: ${SERVER_ID}
+EOF
 
-mkdir -p ~/ldifs
+# TODO syncrepl configuration
 
-envsubst >~/ldifs/20_config.ldif <${AGENT_INSTALL_DIR}/config.ldif.template
-envsubst >~/ldifs/30_dit.ldif <${AGENT_INSTALL_DIR}/dit.ldif.template
+# dn: olcDatabase={2}mdb,cn=config
+# changetype:modify
+# replace: olcSyncrepl
+# olcSyncrepl: rid=001
+#   provider=ldap://10.5.4.1:20001
+#   binddn="cn=admin,dc=dp,dc=nethserver,dc=net"
+#   bindmethod=simple
+#   credentials=Nethesis,1234
+#   searchbase="dc=dp,dc=nethserver,dc=net"
+#   type=refreshAndPersist
+#   retry="5 5 300 +"
+#   timeout=5
+# -
+# replace: olcMirrorMode
+# olcMirrorMode: TRUE
