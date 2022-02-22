@@ -104,7 +104,7 @@ func ListActions(actionPaths []string) []string {
 			}
 		}
 	}
-	actions := make([]string, 0, len(actionDirs))
+	actions := []string{"list-actions"}
 	for dir, _ := range actionDirs {
 		actions = append(actions, dir)
 	}
