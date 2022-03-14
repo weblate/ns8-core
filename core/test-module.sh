@@ -2,6 +2,7 @@
 
 LEADER_NODE=$1
 SSH_KEYFILE=${SSH_KEYFILE:-$HOME/.ssh/id_rsa}
+TAGS=${TAGS:-"*"}
 
 ssh_key="$(cat $SSH_KEYFILE)"
 
@@ -23,7 +24,9 @@ podman run -i \
         -v SSH_KEYFILE:/home/pwuser/ns8-key \
 	-v COREBRANCH:${COREBRANCH} \
 	-v COREMODULES:${COREMODULES} \
-	-d ~/outputs /home/pwuser/ns8-scratchpad/core/tests/
+	-d ~/outputs \
+	--include "${TAGS}" \
+	/home/pwuser/ns8-scratchpad/core/tests/
 EOF
 
 tests_res=$?
