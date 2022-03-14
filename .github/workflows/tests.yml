@@ -9,6 +9,7 @@ env:
   TF_VAR_domain: "ci.nethserver.net"
   NS8_LEADER_NODES: "dn1 cs1"
   NS8_CORE_MODULES: "core traefik loki promtail ldapproxy"
+  TESTS_TAGS: "frontend backend"
 
 jobs:
   ns8:
@@ -19,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       nodes: ${{ steps.nodes.outputs.list }}
+      tests_tags: ${{ steps.tests_tags.outputs.name }}
       modules: ${{ steps.modules.outputs.list }}
       tag: ${{ steps.tag.outputs.name }}
       short_sha: ${{ steps.short_sha.outputs.value }}
@@ -27,6 +29,10 @@ jobs:
         run: |
           nodes=$(jq -ncR '[inputs]' <<< "$(echo $NS8_LEADER_NODES | tr ' ' '\n')")
           echo "::set-output name=list::${nodes}"
+      - id: tests_tags
+        run: |
+          tags=$(jq -ncR '[inputs]' <<< "$(echo $TESTS_TAGS | tr ' ' '\n')")
+          echo "::set-output name=name::${tags}"
       - id: tag
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]
@@ -62,6 +68,7 @@ jobs:
       fail-fast: false
       matrix:
           node: ${{ fromJSON(needs.ns8.outputs.nodes) }}
+          tag: ${{ fromJSON(needs.ns8.outputs.tests_tags) }}
     steps:
       - uses: actions/checkout@v2
       - name: HashiCorp - Setup Terraform
@@ -73,7 +80,7 @@ jobs:
           TF_VAR_do_token: ${{ secrets.do_token }}
         run: |
           terraform init
-          terraform workspace new ${{ matrix.node }}-${{ needs.ns8.outputs.short_sha }}
+          terraform workspace new ${{ matrix.node }}-${{ matrix.tag }}-${{ needs.ns8.outputs.short_sha }}
           terraform apply -var 'leader_node={"${{ matrix.node }}":"ams3"}' -auto-approve
         working-directory: ${{ github.workspace }}/infra
       - name: HashiCorp - Terraform Output Deploy Key
@@ -82,14 +89,14 @@ jobs:
       - name: Save Deploy Key
         uses: actions/upload-artifact@v2
         with:
-          name: deploy-key-${{ matrix.node }}
+          name: deploy-key-${{ matrix.node }}-${{ matrix.tag }}
           path: ${{ github.workspace }}/key
           retention-days: 1
       - name: Save Terraform State
         uses: actions/upload-artifact@v2
         with:
-          name: terraform.tfstate-${{ matrix.node }}
-          path: ${{ github.workspace }}/infra/terraform.tfstate.d/${{ matrix.node }}-${{ needs.ns8.outputs.short_sha }}/terraform.tfstate
+          name: terraform.tfstate-${{ matrix.node }}-${{ matrix.tag }}
+          path: ${{ github.workspace }}/infra/terraform.tfstate.d/${{ matrix.node }}-${{ matrix.tag }}-${{ needs.ns8.outputs.short_sha }}/terraform.tfstate
           retention-days: 1
   core:
     name: "Core tests"
@@ -98,6 +105,7 @@ jobs:
       fail-fast: false
       matrix:
         node: ${{ fromJSON(needs.ns8.outputs.nodes) }}
+        tag: ${{ fromJSON(needs.ns8.outputs.tests_tags) }}
     needs:
       - infra_create
       - ns8
@@ -106,21 +114,22 @@ jobs:
       - name: Get Deploy Key
         uses: actions/download-artifact@v2
         with:
-          name: deploy-key-${{ matrix.node }}
+          name: deploy-key-${{ matrix.node }}-${{ matrix.tag }}
           path: ${{ github.workspace }}/
       - name: Run tests
         run: |
-          ./test-module.sh ${{ matrix.node }}.leader.${{ matrix.node }}-${{ needs.ns8.outputs.short_sha }}.${{ env.TF_VAR_domain }}
+          ./test-module.sh ${{ matrix.node }}.leader.${{ matrix.node }}-${{ matrix.tag }}-${{ needs.ns8.outputs.short_sha }}.${{ env.TF_VAR_domain }}
         working-directory: ${{ github.workspace }}/core
         env:
           SSH_KEYFILE: ${{ github.workspace }}/key
           COREBRANCH: ${{ needs.ns8.outputs.tag }}
           COREMODULES: ${{ join(fromJSON(needs.ns8.outputs.modules), ',' ) }}
+          TAGS: ${{ matrix.tag }}
       - name: Save tests results
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: core-tests-logs-${{ matrix.node }}
+          name: core-tests-logs-${{ matrix.node }}-${{ matrix.tag }}
           path: |
              ${{ github.workspace }}/core/tests/outputs/output.xml
              ${{ github.workspace }}/core/tests/outputs/log.html
@@ -135,6 +144,7 @@ jobs:
       fail-fast: false
       matrix:
         node: ${{ fromJSON(needs.ns8.outputs.nodes) }}
+        tag: ${{ fromJSON(needs.ns8.outputs.tests_tags) }}
     if: always()
     steps:
       - uses: actions/checkout@v2
@@ -143,7 +153,7 @@ jobs:
       - name: Get Terraform State
         uses: actions/download-artifact@v2
         with:
-          name: terraform.tfstate-${{ matrix.node }}
+          name: terraform.tfstate-${{ matrix.node }}-${{ matrix.tag }}
           path: |
              ${{ github.workspace }}/infra/
       - name: Destroy the infrastructure
