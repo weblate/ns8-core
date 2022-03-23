@@ -31,6 +31,7 @@ Install Another Instance
     Set Retry Assertions For    ${old_retry_assertions}
 
 Uninstall App
+    [Tags]    unstable
     UI login    admin    Nethesis,12345
     Click    text="Software center"
     Click    .app-list .bx--row > div:first-child button >> text="Instances"
