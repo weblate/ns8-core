@@ -151,10 +151,20 @@ jobs:
           terraform init
           terraform apply -destroy -auto-approve
         working-directory: ${{ github.workspace }}/infra
+  gh_runner:
+    needs: ns8
+    uses: Amygos/ns8-github-actions/.github/workflows/test-on-ubuntu-runner.yml@main
+    with:
+      path: core/
+      setup_cluster: false
+      coremodules: ${{ join(fromJSON(needs.ns8.outputs.modules), ' ' ) }}
+      debug_shell: true
   remove_label:
     name: "Cleaup PR label"
     runs-on: ubuntu-latest
-    needs: infra_destroy
+    needs:
+      - infra_destroy
+      - gh_runner
     if: |
       github.event.label.name == 'testing' &&
       needs.infra_destroy.result == 'success' &&
