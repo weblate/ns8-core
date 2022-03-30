@@ -54,103 +54,6 @@ jobs:
             fi
           done
           echo "::set-output name=list::${modules_list}"
-  infra_create:
-    name: "Create the infrastructure"
-    runs-on: ubuntu-latest
-    needs: ns8
-    strategy:
-      fail-fast: false
-      matrix:
-          node: ${{ fromJSON(needs.ns8.outputs.nodes) }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: HashiCorp - Setup Terraform
-        uses: hashicorp/setup-terraform@v1.2.1
-        with:
-          terraform_wrapper: false
-      - name: HashiCorp - Terraform Apply
-        env:
-          TF_VAR_do_token: ${{ secrets.do_token }}
-        run: |
-          terraform init
-          terraform workspace new ${{ matrix.node }}-${{ needs.ns8.outputs.short_sha }}
-          terraform apply -var 'leader_node={"${{ matrix.node }}":"ams3"}' -auto-approve
-        working-directory: ${{ github.workspace }}/infra
-      - name: HashiCorp - Terraform Output Deploy Key
-        run: terraform output -raw deploy-key > ${{ github.workspace }}/key
-        working-directory: ${{ github.workspace }}/infra
-      - name: Save Deploy Key
-        uses: actions/upload-artifact@v2
-        with:
-          name: deploy-key-${{ matrix.node }}
-          path: ${{ github.workspace }}/key
-          retention-days: 1
-      - name: Save Terraform State
-        uses: actions/upload-artifact@v2
-        with:
-          name: terraform.tfstate-${{ matrix.node }}
-          path: ${{ github.workspace }}/infra/terraform.tfstate.d/${{ matrix.node }}-${{ needs.ns8.outputs.short_sha }}/terraform.tfstate
-          retention-days: 1
-  core:
-    name: "Core tests"
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node: ${{ fromJSON(needs.ns8.outputs.nodes) }}
-    needs:
-      - infra_create
-      - ns8
-    steps:
-      - uses: actions/checkout@v2
-      - name: Get Deploy Key
-        uses: actions/download-artifact@v2
-        with:
-          name: deploy-key-${{ matrix.node }}
-          path: ${{ github.workspace }}/
-      - name: Run tests
-        run: |
-          ./test-module.sh ${{ matrix.node }}.leader.${{ matrix.node }}-${{ needs.ns8.outputs.short_sha }}.${{ env.TF_VAR_domain }}
-        working-directory: ${{ github.workspace }}/core
-        env:
-          SSH_KEYFILE: ${{ github.workspace }}/key
-          COREMODULES: ${{ join(fromJSON(needs.ns8.outputs.modules), ' ' ) }}
-      - name: Save tests results
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: core-tests-logs-${{ matrix.node }}
-          path: |
-             ${{ github.workspace }}/core/tests/outputs/
-
-  infra_destroy:
-    name: "Destroy the infrastructure"
-    runs-on: ubuntu-latest
-    needs:
-      - ns8
-      - core
-    strategy:
-      fail-fast: false
-      matrix:
-        node: ${{ fromJSON(needs.ns8.outputs.nodes) }}
-    if: always()
-    steps:
-      - uses: actions/checkout@v2
-      - name: HashiCorp - Setup Terraform
-        uses: hashicorp/setup-terraform@v1.2.1
-      - name: Get Terraform State
-        uses: actions/download-artifact@v2
-        with:
-          name: terraform.tfstate-${{ matrix.node }}
-          path: |
-             ${{ github.workspace }}/infra/
-      - name: Destroy the infrastructure
-        env:
-          TF_VAR_do_token: ${{ secrets.do_token }}
-        run: |
-          terraform init
-          terraform apply -destroy -auto-approve
-        working-directory: ${{ github.workspace }}/infra
   gh_runner:
     needs: ns8
     uses: Amygos/ns8-github-actions/.github/workflows/test-on-ubuntu-runner.yml@main
@@ -163,7 +66,6 @@ jobs:
     name: "Cleaup PR label"
     runs-on: ubuntu-latest
     needs:
-      - infra_destroy
       - gh_runner
     if: |
       github.event.label.name == 'testing' &&
