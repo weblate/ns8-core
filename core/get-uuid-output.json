@@ -1,0 +1,1 @@
+{"$schema":"http://json-schema.org/draft-07/schema#","title":"get-uuid output","description":"Output schema of the get-uuid action","$id":"http://schema.nethserver.org/cluster/get-uuid-output.json","examples":[{"uuid":"77365ea8-a2d6-4731-8a79-07e18e889e6a"}],"type":"object","properties":{"uuid":{"description":"Generated UUID","type":"string"}},"required":["uuid"]}
